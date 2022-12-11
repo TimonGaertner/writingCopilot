@@ -1,22 +1,27 @@
-chrome.storage.local.get(["api_key"]).then((result) => {
+browser.storage.sync.get(["api_key"]).then((result) => {
     if (result.api_key) {
         document.getElementById("api_key").value = result.api_key;
     }
 });
-chrome.storage.local.get(["tokens"]).then((result) => {
+browser.storage.sync.get(["tokens"]).then((result) => {
     if (result.tokens) {
         document.getElementById("tokens").value = result.tokens;
     }
 });
-chrome.storage.local.get(["test_fetch"]).then((result) => {
+browser.storage.sync.get(["test_fetch"]).then((result) => {
     if (result.test_fetch) {
         document.getElementById("test_fetch").checked = result.test_fetch;
     }
 });
-chrome.storage.local.get(["max_input_length"]).then((result) => {
+browser.storage.sync.get(["max_input_length"]).then((result) => {
     if (result.max_input_length) {
         document.getElementById("max_input_length").value =
             result.max_input_length;
+    }
+});
+browser.storage.sync.get(["model"]).then((result) => {
+    if (result.model) {
+        document.getElementById("model").value = result.model;
     }
 });
 
@@ -26,16 +31,18 @@ document.querySelector("form").addEventListener("submit", (e) => {
     let tokens = document.getElementById("tokens").value;
     let test_fetch = document.getElementById("test_fetch").checked;
     let max_input_length = document.getElementById("max_input_length").value;
-    chrome.storage.local.set({
+    let model = document.getElementById("model").value;
+    browser.storage.sync.set({
         api_key: api_key,
-        tokens: tokens,
+        tokens: parseInt(tokens),
         test_fetch: test_fetch,
         max_input_length: max_input_length,
+        model: model,
     });
 });
 
 let usage = document.getElementById("usage");
-chrome.storage.local.get(["api_key"]).then((result) => {
+browser.storage.sync.get(["api_key"]).then((result) => {
     if (result.api_key) {
         //date formatted YYYY-MM-DD
         fetch(

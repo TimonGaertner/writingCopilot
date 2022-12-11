@@ -1,3 +1,5 @@
+console.log("content script loaded");
+
 function changeTextColorOpacity(element, opacityDelta) {
     let currentColor = window.getComputedStyle(element).color;
     // if the color is no rgba color, convert it to rgba
@@ -40,11 +42,11 @@ function decreaseOpacity(element) {
         opacityDecreased = true;
     }
 }
-
+let active_input = undefined;
 function acceptOrDeclineSuggestion(event) {
     // tab to accept suggestion
     if (event.key == "Tab") {
-        var input = document.activeElement;
+        var input = active_input;
         if (input.getAttribute("data-suggestion") == "true") {
             input.setAttribute("data-suggestion", "false");
 
@@ -56,9 +58,11 @@ function acceptOrDeclineSuggestion(event) {
         // set cursor position to end of input field
         // check if input field is a textarea/input or contenteditable div
         if (input.tagName == "TEXTAREA" || input.tagName == "INPUT") {
+            active_input.focus();
             input.selectionStart = input.value.length;
             input.selectionEnd = input.value.length;
         } else {
+            active_input.focus();
             var range = document.createRange();
             range.selectNodeContents(input);
             range.collapse(false);
@@ -73,6 +77,7 @@ function acceptOrDeclineSuggestion(event) {
             "keydown",
             acceptOrDeclineSuggestion
         );
+        return false;
     } else {
         var input = document.activeElement;
 
@@ -102,13 +107,13 @@ function acceptOrDeclineSuggestion(event) {
 
 function addSuggestionControlListeners(input) {
     // register event listeners to accept or decline suggestion
-    input.addEventListener("keydown", acceptOrDeclineSuggestion);
+    input.addEventListener("keydown", acceptOrDeclineSuggestion, true);
 }
 
 /*
 hear for the command "show-suggestion", if the user is currently in an input field with input send the input to the background script, the background script will then answer with an suggestion which will be displayed in the input field by changing the input fields value and styling the input fields texts opacity to 0.8, if the user presses tab the suggestion will be inserted into the input field, if the user presses something else he can continue to type the old input which will be restored to the input fields value
 */
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+browser.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.command == "show_suggestion") {
         var input = document.activeElement;
         // check if input is an input field, a textarea or an editable div
@@ -132,13 +137,17 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             // url of current tab
             var url = request.url;
             // send input to background script
-            chrome.runtime.sendMessage(
+            browser.runtime.sendMessage(
                 {
                     command: "get-suggestion",
                     input: input.value,
                     url: request.url,
                 },
                 function (response) {
+                    if (response.error != undefined) {
+                        alert("OPENAI ERROR: " + response.error.message);
+                        return;
+                    }
                     // save old input
                     input.setAttribute("data-old-input", input.value);
                     // set new input
@@ -151,6 +160,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                     input.selectionStart =
                         input.value.length - response.suggestion.length;
                     input.selectionEnd = input.value.length;
+                    active_input = input;
                     addSuggestionControlListeners(input);
                 }
             );
@@ -167,17 +177,46 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             // url of current tab
             var url = request.url;
             // send input to background script
-            chrome.runtime.sendMessage(
+            browser.runtime.sendMessage(
                 {
                     command: "get-suggestion",
                     input: input.innerText,
                     url: request.url,
                 },
                 function (response) {
+                    if (response.error != undefined) {
+                        alert("OPENAI ERROR: " + response.error.message);
+                        return;
+                    }
                     // save old input
                     input.setAttribute("data-old-input", input.innerText);
                     // set new input
-                    input.innerText = input.innerText + response.suggestion;
+                    old_text = input.innerText;
+                    // if exactly one newline is at the end:
+                    if (old_text.match(/\n$/) && !old_text.match(/\n.*\n$/)) {
+                        // remove newline
+                        old_text = old_text.slice(0, -1);
+                        // add space
+                        old_text += " ";
+                        // add suggestion
+                        old_text += response.suggestion;
+                        // add newline
+                        // old_text += "\n";
+                        input.innerText = old_text;
+                    } // else if multiple newlines are at the end:
+                    else if (old_text.match(/\n.*\n$/)) {
+                        // remove last newline
+                        old_text = old_text.slice(0, -1);
+                        // add suggestion
+                        old_text += response.suggestion;
+                        // add newline
+                        // old_text += "\n";
+                        input.innerText = old_text;
+                    } // else if no newline is at the end:
+                    else {
+                        input.innerText = old_text + response.suggestion;
+                    }
+
                     input.setAttribute("data-suggestion", "true");
                     // set opacity of input field text to 0.8
                     decreaseOpacity(input);
@@ -223,6 +262,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                     selection.removeAllRanges();
                     selection.addRange(range);
 
+                    active_input = input;
                     addSuggestionControlListeners(input);
                 }
             );

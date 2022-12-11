@@ -1,13 +1,14 @@
 {
-    "manifest_version": 3,
+    "manifest_version": 2,
     "name": "Hello Extensions",
     "description": "Base Level Extension",
     "version": "1.0",
-    "action": {
+    "browser_action": {
         "default_popup": "index.html"
     },
     "background": {
-        "service_worker": "background.js"
+        "scripts": ["background.js"],
+        "persistent": false
     },
     "permissions": ["storage", "activeTab"],
     "content_scripts": [
@@ -24,6 +25,11 @@
                 "mac": "MacCtrl+Shift+Y"
             },
             "description": "Show suggestions"
+        }
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "timon.ben.gaertner@gmail.com"
         }
     }
 }

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+    </head>
+    <body>
+        <form action="">
+            <label for="api_key">OPENAI API Key:</label>
+            <input type="text" id="api_key" name="api_key" />
+            <label for="tokens">Max tokens:</label>
+            <input
+                type="number"
+                id="tokens"
+                name="tokens"
+                min="1"
+                max="100"
+                value="1"
+            />
+            <br />
+            <label for="max_input_length">Max input length:</label>
+            <input
+                type="number"
+                id="max_input_length"
+                name="max_input_length"
+                min="1"
+                max="500"
+                value="150"
+            />
+            <br />
+            <label for="test_fetch">Test fetch:</label>
+            <input type="checkbox" id="test_fetch" name="test_fetch" />
+            <br />
+            <button type="submit">Save</button>
+        </form>
+
+        <h2>Usage this month:</h2>
+        <p id="usage"></p>
+        <script src="index.js"></script>
+    </body>
+</html>

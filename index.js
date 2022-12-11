@@ -19,6 +19,11 @@ chrome.storage.local.get(["max_input_length"]).then((result) => {
             result.max_input_length;
     }
 });
+chrome.storage.local.get(["model"]).then((result) => {
+    if (result.model) {
+        document.getElementById("model").value = result.model;
+    }
+});
 
 document.querySelector("form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -26,11 +31,13 @@ document.querySelector("form").addEventListener("submit", (e) => {
     let tokens = document.getElementById("tokens").value;
     let test_fetch = document.getElementById("test_fetch").checked;
     let max_input_length = document.getElementById("max_input_length").value;
+    let model = document.getElementById("model").value;
     chrome.storage.local.set({
         api_key: api_key,
-        tokens: tokens,
+        tokens: parseInt(tokens),
         test_fetch: test_fetch,
         max_input_length: max_input_length,
+        model: model,
     });
 });
 

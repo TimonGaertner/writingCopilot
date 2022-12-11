@@ -16,7 +16,7 @@
                 id="tokens"
                 name="tokens"
                 min="1"
-                max="100"
+                max="2000"
                 value="1"
             />
             <br />
@@ -26,12 +26,15 @@
                 id="max_input_length"
                 name="max_input_length"
                 min="1"
-                max="500"
+                max="10000"
                 value="150"
             />
             <br />
             <label for="test_fetch">Test fetch:</label>
             <input type="checkbox" id="test_fetch" name="test_fetch" />
+            <br />
+            <label for="model">Model:</label>
+            <input type="text" id="model" name="model" />
             <br />
             <button type="submit">Save</button>
         </form>

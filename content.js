@@ -40,11 +40,11 @@ function decreaseOpacity(element) {
         opacityDecreased = true;
     }
 }
-
+let active_input = undefined;
 function acceptOrDeclineSuggestion(event) {
     // tab to accept suggestion
     if (event.key == "Tab") {
-        var input = document.activeElement;
+        var input = active_input;
         if (input.getAttribute("data-suggestion") == "true") {
             input.setAttribute("data-suggestion", "false");
 
@@ -56,9 +56,11 @@ function acceptOrDeclineSuggestion(event) {
         // set cursor position to end of input field
         // check if input field is a textarea/input or contenteditable div
         if (input.tagName == "TEXTAREA" || input.tagName == "INPUT") {
+            active_input.focus();
             input.selectionStart = input.value.length;
             input.selectionEnd = input.value.length;
         } else {
+            active_input.focus();
             var range = document.createRange();
             range.selectNodeContents(input);
             range.collapse(false);
@@ -73,6 +75,7 @@ function acceptOrDeclineSuggestion(event) {
             "keydown",
             acceptOrDeclineSuggestion
         );
+        return false;
     } else {
         var input = document.activeElement;
 
@@ -102,7 +105,7 @@ function acceptOrDeclineSuggestion(event) {
 
 function addSuggestionControlListeners(input) {
     // register event listeners to accept or decline suggestion
-    input.addEventListener("keydown", acceptOrDeclineSuggestion);
+    input.addEventListener("keydown", acceptOrDeclineSuggestion, true);
 }
 
 /*
@@ -139,6 +142,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                     url: request.url,
                 },
                 function (response) {
+                    if (response.error != undefined) {
+                        alert("OPENAI ERROR: " + response.error.message);
+                        return;
+                    }
                     // save old input
                     input.setAttribute("data-old-input", input.value);
                     // set new input
@@ -151,6 +158,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                     input.selectionStart =
                         input.value.length - response.suggestion.length;
                     input.selectionEnd = input.value.length;
+                    active_input = input;
                     addSuggestionControlListeners(input);
                 }
             );
@@ -174,10 +182,39 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                     url: request.url,
                 },
                 function (response) {
+                    if (response.error != undefined) {
+                        alert("OPENAI ERROR: " + response.error.message);
+                        return;
+                    }
                     // save old input
                     input.setAttribute("data-old-input", input.innerText);
                     // set new input
-                    input.innerText = input.innerText + response.suggestion;
+                    old_text = input.innerText;
+                    // if exactly one newline is at the end:
+                    if (old_text.match(/\n$/) && !old_text.match(/\n.*\n$/)) {
+                        // remove newline
+                        old_text = old_text.slice(0, -1);
+                        // add space
+                        old_text += " ";
+                        // add suggestion
+                        old_text += response.suggestion;
+                        // add newline
+                        // old_text += "\n";
+                        input.innerText = old_text;
+                    } // else if multiple newlines are at the end:
+                    else if (old_text.match(/\n.*\n$/)) {
+                        // remove last newline
+                        old_text = old_text.slice(0, -1);
+                        // add suggestion
+                        old_text += response.suggestion;
+                        // add newline
+                        // old_text += "\n";
+                        input.innerText = old_text;
+                    } // else if no newline is at the end:
+                    else {
+                        input.innerText = old_text + response.suggestion;
+                    }
+
                     input.setAttribute("data-suggestion", "true");
                     // set opacity of input field text to 0.8
                     decreaseOpacity(input);
@@ -223,6 +260,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                     selection.removeAllRanges();
                     selection.addRange(range);
 
+                    active_input = input;
                     addSuggestionControlListeners(input);
                 }
             );

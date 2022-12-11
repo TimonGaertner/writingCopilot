@@ -44,6 +44,7 @@ async function getSuggestion(input, url) {
     // get max tokens from storage
     const max_tokens = (await chrome.storage.local.get("tokens")).tokens;
 
+    const model = (await chrome.storage.local.get("model")).model;
     // send request to openai api using fetch
     const response = await (
         await fetch("https://api.openai.com/v1/completions", {
@@ -54,12 +55,16 @@ async function getSuggestion(input, url) {
             },
             body: JSON.stringify({
                 prompt: query_promt,
-                max_tokens: 10,
+                max_tokens: max_tokens,
                 temperature: 0.5,
-                model: "text-davinci-003",
+                model: model,
             }),
         })
     ).json();
+    // check on error
+    if (response.error) {
+        throw response.error;
+    }
     // get suggestion from response
     let suggestion = response.choices[0].text;
     // remove new lines appearing at the start of the suggestion
@@ -76,9 +81,13 @@ async function getSuggestion(input, url) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.command == "get-suggestion") {
         // get suggestion from server
-        getSuggestion(request.input, request.url).then((suggestion) => {
-            sendResponse({ suggestion: suggestion });
-        });
+        getSuggestion(request.input, request.url)
+            .catch((error) => {
+                sendResponse({ error: error });
+            })
+            .then((suggestion) => {
+                sendResponse({ suggestion: suggestion });
+            });
     }
     return true;
 });
